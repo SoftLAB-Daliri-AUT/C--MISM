@@ -1,0 +1,131 @@
+using System;
+using System.Collections.Generic;
+
+public class Node
+{
+    public int Id { get; set; }
+    public double Threshold { get; set; }
+    public List<Node> Neighbors { get; set; }
+    public List<double> EdgeWeights { get; set; }
+    public bool Activated { get; set; }
+
+    public Node(int id, double threshold)
+    {
+        Id = id;
+        Threshold = threshold;
+        Neighbors = new List<Node>();
+        EdgeWeights = new List<double>();
+        Activated = false;
+    }
+
+    public void AddNeighbor(Node neighbor, double weight)
+    {
+        Neighbors.Add(neighbor);
+        EdgeWeights.Add(weight);
+    }
+}
+
+public class MultiplexNetwork
+{
+    public List<List<Node>> Layers { get; set; }
+
+    public MultiplexNetwork()
+    {
+        Layers = new List<List<Node>>();
+    }
+
+    public void AddLayer(List<Node> layer)
+    {
+        Layers.Add(layer);
+    }
+
+    public void ActivateNodes(List<Node> seedNodes)
+    {
+        Queue<Node> queue = new Queue<Node>();
+
+        foreach (var seedNode in seedNodes)
+        {
+            seedNode.Activated = true;
+            queue.Enqueue(seedNode);
+        }
+
+        while (queue.Count > 0)
+        {
+            var currentNode = queue.Dequeue();
+            foreach (var neighbor in currentNode.Neighbors)
+            {
+                double totalWeight = 0;
+                for (int i = 0; i < neighbor.Neighbors.Count; i++)
+                {
+                    if (neighbor.Neighbors[i].Activated)
+                    {
+                        totalWeight += neighbor.EdgeWeights[i];
+                    }
+                }
+                if (totalWeight >= neighbor.Threshold && !neighbor.Activated)
+                {
+                    neighbor.Activated = true;
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+    }
+
+    public List<Node> GetActivatedNodes()
+    {
+        List<Node> activatedNodes = new List<Node>();
+        foreach (var layer in Layers)
+        {
+            foreach (var node in layer)
+            {
+                if (node.Activated)
+                {
+                    activatedNodes.Add(node);
+                }
+            }
+        }
+        return activatedNodes;
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Create nodes and layers
+        Node node1 = new Node(1, 0.5);
+        Node node2 = new Node(2, 0.6);
+        Node node3 = new Node(3, 0.7);
+        Node node4 = new Node(4, 0.8);
+
+        List<Node> layer1 = new List<Node> { node1, node2 };
+        List<Node> layer2 = new List<Node> { node3, node4 };
+
+        // Add neighbors with edge weights
+        node1.AddNeighbor(node2, 0.8);
+        node2.AddNeighbor(node1, 0.8);
+        node2.AddNeighbor(node3, 0.6);
+        node3.AddNeighbor(node2, 0.6);
+        node3.AddNeighbor(node4, 0.7);
+        node4.AddNeighbor(node3, 0.7);
+
+        // Create multiplex network
+        MultiplexNetwork network = new MultiplexNetwork();
+        network.AddLayer(layer1);
+        network.AddLayer(layer2);
+
+        // Activate nodes using seed nodes
+        List<Node> seedNodes = new List<Node> { node1, node3 };
+        network.ActivateNodes(seedNodes);
+
+        // Get activated nodes
+        List<Node> activatedNodes = network.GetActivatedNodes();
+
+        // Print the result
+        Console.WriteLine("Activated Nodes:");
+        foreach (var node in activatedNodes)
+        {
+            Console.WriteLine(node.Id);
+        }
+    }
+}
